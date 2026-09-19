@@ -22,13 +22,20 @@ class Groq
                     'model' => 'openai/gpt-oss-20b',
 
                     'messages' => [
+
                         [
-                            'role'    => 'user',
-                            'content' => $prompt,
+                            'role' => 'system',
+                            'content' => 'You are an expert YouTube Growth Strategist. Analyze only the provided YouTube API data. Never invent statistics.'
+                        ],
+
+                        [
+                            'role' => 'user',
+                            'content' => $prompt
                         ]
+
                     ],
 
-                    'temperature' => 0.7,
+                    'temperature' => 0.2,
                     'max_tokens'  => 1000,
                 ]
             );

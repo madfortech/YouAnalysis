@@ -21,7 +21,7 @@ class DeepSeek
 
                 'messages' => [
                     [
-                        'role' => 'system',
+                        'role' => 'user',
                         'content' => 'You are a professional YouTube SEO strategist.'
                     ],
                     [

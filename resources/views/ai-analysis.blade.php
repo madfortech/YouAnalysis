@@ -106,7 +106,12 @@
                             name="analysis" 
                             id="analysis" 
                             class="w-full h-32 p-2 border border-gray-300 rounded"
-                            placeholder="Enter your analysis here..."
+                            placeholder="Enter a YouTube topic...
+                                Examples:
+                                youtube promotion
+                                laravel tutorial
+                                ai tools
+                                minecraft"
                             required
                             maxlength="150"
                         >   {{ old('analysis') }}

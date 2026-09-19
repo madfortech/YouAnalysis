@@ -20,9 +20,11 @@ class PopularController extends Controller
                 ->get(
                     'https://www.googleapis.com/youtube/v3/i18nRegions',
                     [
-                        'part' => 'snippet',
-                        'hl'   => 'en_US',
-                        'key'  => env('YOU_ANALYSIS_API_KEY'),
+                        'part'       => 'snippet',
+                        'order'      => 'relevance',
+                        'maxResults' => 25,
+                        'hl'         => 'en_US',
+                        'key'        => env('YOU_ANALYSIS_API_KEY'),
                     ]
                 );
 

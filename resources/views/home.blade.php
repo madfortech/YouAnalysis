@@ -15,7 +15,7 @@
             </div>
 
             <p class="text-center text-zinc-400 text-sm">
-                AI-powered YouTube analytics platform built using the YouTube API.
+                AI-powered You Analysis platform built using the YouTube API.
                 Analyze channels, videos, trends, engagement, and audience insights
                 with intelligent AI-driven reports.
             </p>

@@ -73,7 +73,8 @@ class AiAnalysisController extends Controller
                         'part'       => 'snippet',
                         'q'          => $topic,
                         'type'       => 'video',
-                        'maxResults' => 10,
+                        'maxResults' => 50,
+                        'order' => 'relevance',
                         'key'        => env('YOU_ANALYSIS_API_KEY'),
                     ]
                 );
@@ -119,7 +120,7 @@ class AiAnalysisController extends Controller
                 ->get(
                     'https://www.googleapis.com/youtube/v3/videos',
                     [
-                        'part' => 'snippet,statistics',
+                        'part' => 'snippet,statistics,contentDetails',
                         'id'   => $videoIds,
                         'key'  => env('YOU_ANALYSIS_API_KEY'),
                     ]
@@ -167,10 +168,23 @@ class AiAnalysisController extends Controller
             ->map(function ($video) {
 
                 return [
-                    'title'   => $video['snippet']['title'] ?? '',
-                    'channel' => $video['snippet']['channelTitle'] ?? '',
-                    'views'   => $video['statistics']['viewCount'] ?? 0,
-                    'likes'   => $video['statistics']['likeCount'] ?? 0,
+
+                    'title'=>$video['snippet']['title'] ?? '',
+
+                    'description'=>$video['snippet']['description'] ?? '',
+
+                    'channel'=>$video['snippet']['channelTitle'] ?? '',
+
+                    'publishedAt'=>$video['snippet']['publishedAt'] ?? '',
+
+                    'duration'=>$video['contentDetails']['duration'] ?? '',
+
+                    'views'=>(int)($video['statistics']['viewCount'] ?? 0),
+
+                    'likes'=>(int)($video['statistics']['likeCount'] ?? 0),
+
+                    'comments'=>(int)($video['statistics']['commentCount'] ?? 0),
+
                 ];
 
             })
@@ -205,49 +219,120 @@ class AiAnalysisController extends Controller
                 ->values();
             }
 
+            $averageViews = (int) $videos->avg('views');
+
+            $averageLikes = (int) $videos->avg('likes');
+
+            $averageComments = (int) $videos->avg('comments');
+
+            $bestUploadHour = $videos
+                ->groupBy(function ($video) {
+                    return Carbon::parse($video['publishedAt'])->format('H:00');
+                })
+                ->sortByDesc(function ($group) {
+                    return $group->count();
+                })
+                ->keys()
+                ->first();
+
+            $bestUploadDay = $videos
+                ->groupBy(function ($video) {
+                    return Carbon::parse($video['publishedAt'])->format('l');
+                })
+                ->sortByDesc(function ($group) {
+                    return $group->count();
+                })
+                ->keys()
+                ->first();
+
             /**
              * AI prompt
              */
             $prompt = "
-            You are a professional YouTube growth strategist.
 
-            Analyze this YouTube topic using REAL YouTube trend data.
+                You are an expert YouTube Growth Strategist and SEO Analyst.
 
-            Topic:
-            {$topic}
+                Analyze ONLY the YouTube API data provided below.
 
-            Trending Video Data:
-            {$videos->toJson()}
+                Do NOT invent statistics.
+                Do NOT make assumptions.
+                Base every recommendation on the supplied videos.
 
-            Return concise bullet points only.
+                Topic:
+                {$topic}
 
-            Include:
-            - Growth probability
-            - Competition level
-            - Viral potential
-            - Best content angle
-            - Target audience
-            - Best video duration
-            - Best upload time (IST)
-            - SEO keywords
-            - Suggested hashtags
-            - 3 viral title ideas
-            - Thumbnail concept
-            - Competitor strategy
-            - Content gap opportunity
+                Summary
 
-            Important:
-            - Use provided YouTube data
-            - Keep response concise
-            - No markdown
-            - No fake claims
-            - No invented statistics
+                Average Views: {$averageViews}
+
+                Average Likes: {$averageLikes}
+
+                Average Comments: {$averageComments}
+
+                Best Upload Hour: {$bestUploadHour}
+
+                Best Upload Day: {$bestUploadDay}
+
+                Top Videos Data:
+
+                {$videos->toJson(JSON_PRETTY_PRINT)}
+
+                Task:
+
+                Analyze the competitors and provide practical recommendations.
+
+                Return using this exact format.
+
+                Competition Level:
+                (Low / Medium / High with one-line reason)
+
+                Growth Probability:
+                (Low / Medium / High with reason)
+
+                Top Competitor Pattern:
+                (What successful videos have in common)
+
+                Recommended Content Type:
+                (Tutorial / Shorts / Review / Comparison / Case Study / Guide)
+
+                Content Idea:
+                (What video should be created)
+
+                Why This Content Can Win:
+                (Explain the opportunity)
+
+                Best SEO Title:
+
+                5 Alternative Titles:
+
+                SEO Description:
+
+                Top SEO Keywords:
+
+                Suggested Tags:
+
+                Suggested Hashtags:
+
+                Thumbnail Text:
+
+                Thumbnail Design Idea:
+
+                Video Hook (First 15 Seconds):
+
+                Recommended Video Duration:
+
+                Best Upload Time:
+
+                Target Audience:
+
+                Competitor Weakness:
+
+                Content Gap:
+
+                Final Strategy:
+                (Explain exactly how this video can outperform the competitors.)
+
             ";
-
-            /**
-             * AI response
-             */
-            $result = $ai->analyze($prompt);
 
             /**
              * Empty AI response
