@@ -3,18 +3,22 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class Groq
 {
     /**
-     * Analyze prompt using Groq AI
+     * Analyze prompt using Groq AI.
+     *
+     * Falls back to free OpenRouter models when Groq
+     * is rate-limited, unavailable, or returns no content.
      */
     public function analyze(string $prompt): string
     {
         $response = Http::timeout(120)
             ->withHeaders([
-                'Authorization' => 'Bearer ' . env('GROQ_API_KEY'),
-                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer '.config('services.groq.key'),
+                'Content-Type' => 'application/json',
             ])
             ->post(
                 'https://api.groq.com/openai/v1/chat/completions',
@@ -25,36 +29,39 @@ class Groq
 
                         [
                             'role' => 'system',
-                            'content' => 'You are an expert YouTube Growth Strategist. Analyze only the provided YouTube API data. Never invent statistics.'
+                            'content' => 'You are an expert YouTube Growth Strategist. Analyze only the provided YouTube API data. Never invent statistics.',
                         ],
 
                         [
                             'role' => 'user',
-                            'content' => $prompt
-                        ]
+                            'content' => $prompt,
+                        ],
 
                     ],
 
                     'temperature' => 0.2,
-                    'max_tokens'  => 1000,
+                    'max_tokens' => 8192,
                 ]
             );
 
         /**
-         * Failed request
+         * Failed request - fall back to free OpenRouter models
          */
-        if (! $response->successful()) {
-
-            return 'AI request failed.';
-        }
-
-        /**
-         * Return AI response
-         */
-        return data_get(
+        $content = data_get(
             $response->json(),
             'choices.0.message.content',
-            'No response generated.'
+            ''
         );
+
+        if (! $response->successful() || trim((string) $content) === '') {
+
+            Log::warning('Groq AI request failed, falling back to OpenRouter free models', [
+                'status' => $response->status(),
+            ]);
+
+            return app(OpenRouter::class)->analyze($prompt);
+        }
+
+        return $content;
     }
 }

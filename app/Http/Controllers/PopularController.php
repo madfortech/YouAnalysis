@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 
 class PopularController extends Controller
 {
@@ -20,11 +20,11 @@ class PopularController extends Controller
                 ->get(
                     'https://www.googleapis.com/youtube/v3/i18nRegions',
                     [
-                        'part'       => 'snippet',
-                        'order'      => 'relevance',
-                        'maxResults' => 25,
-                        'hl'         => 'en_US',
-                        'key'        => env('YOU_ANALYSIS_API_KEY'),
+                        'part' => 'snippet',
+                        'order' => 'relevance',
+                        'maxResults' => 100,
+                        'hl' => 'en_US',
+                        'key' => config('services.youtube.key'),
                     ]
                 );
 
@@ -85,11 +85,11 @@ class PopularController extends Controller
                 ->get(
                     'https://www.googleapis.com/youtube/v3/videos',
                     [
-                        'part'       => 'snippet,statistics',
-                        'chart'      => 'mostPopular',
+                        'part' => 'snippet,statistics',
+                        'chart' => 'mostPopular',
                         'regionCode' => $regionCode,
                         'maxResults' => 50,
-                        'key'        => env('YOU_ANALYSIS_API_KEY'),
+                        'key' => config('services.youtube.key'),
                     ]
                 );
 
@@ -101,9 +101,9 @@ class PopularController extends Controller
                 return view(
                     'popular',
                     [
-                        'videos'  => collect([]),
+                        'videos' => collect([]),
                         'regions' => $regions,
-                        'region'  => $regionCode,
+                        'region' => $regionCode,
                     ]
                 );
             }
@@ -145,9 +145,9 @@ class PopularController extends Controller
             return view(
                 'popular',
                 [
-                    'videos'  => $videos,
+                    'videos' => $videos,
                     'regions' => $regions,
-                    'region'  => $regionCode,
+                    'region' => $regionCode,
                 ]
             );
 
@@ -163,9 +163,9 @@ class PopularController extends Controller
             return view(
                 'popular',
                 [
-                    'videos'  => collect([]),
+                    'videos' => collect([]),
                     'regions' => $regions,
-                    'region'  => $regionCode,
+                    'region' => $regionCode,
                 ]
             );
         }

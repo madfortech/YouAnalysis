@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Groq;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use App\Services\Groq;
-use Carbon\Carbon;
 
 class AiAnalysisController extends Controller
 {
@@ -70,12 +70,12 @@ class AiAnalysisController extends Controller
                 ->get(
                     'https://www.googleapis.com/youtube/v3/search',
                     [
-                        'part'       => 'snippet',
-                        'q'          => $topic,
-                        'type'       => 'video',
+                        'part' => 'snippet',
+                        'q' => $topic,
+                        'type' => 'video',
                         'maxResults' => 50,
                         'order' => 'relevance',
-                        'key'        => env('YOU_ANALYSIS_API_KEY'),
+                        'key' => config('services.youtube.key'),
                     ]
                 );
 
@@ -97,9 +97,9 @@ class AiAnalysisController extends Controller
             $videoIds = collect(
                 $youtube->json('items')
             )
-            ->pluck('id.videoId')
-            ->filter()
-            ->implode(',');
+                ->pluck('id.videoId')
+                ->filter()
+                ->implode(',');
 
             /**
              * Empty results
@@ -121,8 +121,8 @@ class AiAnalysisController extends Controller
                     'https://www.googleapis.com/youtube/v3/videos',
                     [
                         'part' => 'snippet,statistics,contentDetails',
-                        'id'   => $videoIds,
-                        'key'  => env('YOU_ANALYSIS_API_KEY'),
+                        'id' => $videoIds,
+                        'key' => config('services.youtube.key'),
                     ]
                 );
 
@@ -150,55 +150,15 @@ class AiAnalysisController extends Controller
             $videos = collect(
                 $stats->json('items')
             )
-            ->filter(function ($video) use ($last24Hours) {
+                ->filter(function ($video) use ($last24Hours) {
 
-                return Carbon::parse(
-                    $video['snippet']['publishedAt']
-                )->greaterThanOrEqualTo(
-                    $last24Hours
-                );
+                    return Carbon::parse(
+                        $video['snippet']['publishedAt']
+                    )->greaterThanOrEqualTo(
+                        $last24Hours
+                    );
 
-            })
-            ->sortByDesc(function ($video) {
-
-                return (int)
-                    ($video['statistics']['viewCount'] ?? 0);
-
-            })
-            ->map(function ($video) {
-
-                return [
-
-                    'title'=>$video['snippet']['title'] ?? '',
-
-                    'description'=>$video['snippet']['description'] ?? '',
-
-                    'channel'=>$video['snippet']['channelTitle'] ?? '',
-
-                    'publishedAt'=>$video['snippet']['publishedAt'] ?? '',
-
-                    'duration'=>$video['contentDetails']['duration'] ?? '',
-
-                    'views'=>(int)($video['statistics']['viewCount'] ?? 0),
-
-                    'likes'=>(int)($video['statistics']['likeCount'] ?? 0),
-
-                    'comments'=>(int)($video['statistics']['commentCount'] ?? 0),
-
-                ];
-
-            })
-            ->take(5)
-            ->values();
-
-            /**
-             * Fallback if no fresh videos
-             */
-            if ($videos->isEmpty()) {
-
-                $videos = collect(
-                    $stats->json('items')
-                )
+                })
                 ->sortByDesc(function ($video) {
 
                     return (int)
@@ -208,15 +168,55 @@ class AiAnalysisController extends Controller
                 ->map(function ($video) {
 
                     return [
-                        'title'   => $video['snippet']['title'] ?? '',
+
+                        'title' => $video['snippet']['title'] ?? '',
+
+                        'description' => $video['snippet']['description'] ?? '',
+
                         'channel' => $video['snippet']['channelTitle'] ?? '',
-                        'views'   => $video['statistics']['viewCount'] ?? 0,
-                        'likes'   => $video['statistics']['likeCount'] ?? 0,
+
+                        'publishedAt' => $video['snippet']['publishedAt'] ?? '',
+
+                        'duration' => $video['contentDetails']['duration'] ?? '',
+
+                        'views' => (int) ($video['statistics']['viewCount'] ?? 0),
+
+                        'likes' => (int) ($video['statistics']['likeCount'] ?? 0),
+
+                        'comments' => (int) ($video['statistics']['commentCount'] ?? 0),
+
                     ];
 
                 })
                 ->take(5)
                 ->values();
+
+            /**
+             * Fallback if no fresh videos
+             */
+            if ($videos->isEmpty()) {
+
+                $videos = collect(
+                    $stats->json('items')
+                )
+                    ->sortByDesc(function ($video) {
+
+                        return (int)
+                            ($video['statistics']['viewCount'] ?? 0);
+
+                    })
+                    ->map(function ($video) {
+
+                        return [
+                            'title' => $video['snippet']['title'] ?? '',
+                            'channel' => $video['snippet']['channelTitle'] ?? '',
+                            'views' => $video['statistics']['viewCount'] ?? 0,
+                            'likes' => $video['statistics']['likeCount'] ?? 0,
+                        ];
+
+                    })
+                    ->take(5)
+                    ->values();
             }
 
             $averageViews = (int) $videos->avg('views');
@@ -352,8 +352,8 @@ class AiAnalysisController extends Controller
 
             $history[] = [
                 'topic' => $topic,
-                'time'  => now()->format('d M Y h:i A'),
-                'result' => $result
+                'time' => now()->format('d M Y h:i A'),
+                'result' => $result,
             ];
 
             session([
@@ -367,7 +367,7 @@ class AiAnalysisController extends Controller
                 'ai-analysis',
                 [
                     'result' => $result,
-                    'topic'  => $topic,
+                    'topic' => $topic,
                     'videos' => $videos,
                 ]
             );
@@ -381,15 +381,15 @@ class AiAnalysisController extends Controller
                 'AI Analysis Failed',
                 [
                     'message' => $e->getMessage(),
-                    'topic'   => $topic,
+                    'topic' => $topic,
                 ]
             );
 
             return back()
                 ->withInput()
-                    ->with([
-                        'error' => 'AI analysis failed. Please try again later.',
-                    ]);
+                ->with([
+                    'error' => 'AI analysis failed. Please try again later.',
+                ]);
         }
     }
 }

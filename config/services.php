@@ -35,4 +35,24 @@ return [
         ],
     ],
 
+    'youtube' => [
+        'key' => env('YOUTUBE_API_KEY'),
+    ],
+
+    'groq' => [
+        'key' => env('GROQ_API_KEY'),
+    ],
+
+    'openrouter' => [
+        'key' => env('OPENROUTER_API_KEY'),
+
+        'free_models' => [
+            'google/gemma-4-31b-it:free',
+            'qwen/qwen3.8-27b:free',
+            'z-ai/glm-5.2:free',
+            'nvidia/nemotron-3-super-120b-a12b:free',
+            'poolside/laguna-s-2.1:free',
+        ],
+    ],
+
 ];
